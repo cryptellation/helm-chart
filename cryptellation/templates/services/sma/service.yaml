@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ .Release.Name }}-sma
+  name: {{ .Release.Name }}-sma
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-sma
+  template:
+    metadata:
+      annotations:
+        {{if (.Values.debug).forceDeployment }}timestamp: {{ now | quote }}{{end}}
+      labels:
+        app: {{ .Release.Name }}-sma
+    spec:
+      initContainers:
+      - name: sql-migrations
+        image: {{ ((.Values.services).sma).image.repository | default "ghcr.io/cryptellation/sma" }}:{{ ((.Values.services).sma).image.tag | default (printf "v%s" .Chart.AppVersion) }}
+        imagePullPolicy: {{ ((.Values.services).sma).image.pullPolicy | default "Always" }}
+        command: ["worker", "database", "migrate"]
+        env:
+        # SQL
+        - name: "SQL_DSN"
+          valueFrom:
+            configMapKeyRef:
+              key: sql.dsn
+              name: cryptellation-sma
+      containers:
+      - name: sma
+        image: {{ ((.Values.services).sma).image.repository | default "ghcr.io/cryptellation/sma" }}:{{ ((.Values.services).sma).image.tag | default (printf "v%s" .Chart.AppVersion) }}
+        imagePullPolicy: {{ ((.Values.services).sma).image.pullPolicy | default "Always" }}
+        livenessProbe:
+          httpGet:
+            path: /liveness
+            port: {{ (((.Values.services).sma).health).port | default 9000 }}
+        readinessProbe:
+          httpGet:
+            path: /readiness
+            port: {{ (((.Values.services).sma).health).port | default 9000 }}
+        env:
+        # Health
+        - name: "HEALTH_ADDRESS"
+          valueFrom:
+            configMapKeyRef:
+              key:  health.address
+              name: cryptellation-sma
+        # SQL
+        - name: "SQL_DSN"
+          valueFrom:
+            configMapKeyRef:
+              key: sql.dsn
+              name: cryptellation-sma
+        # Opentelemetry
+        - name: "OPENTELEMETRY_GRPC_ENDPOINT"
+          valueFrom:
+            configMapKeyRef:
+              key: opentelemetry.grpc.endpoint
+              name: cryptellation-credentials
+        # Temporal
+        - name: "TEMPORAL_ADDRESS"
+          valueFrom:
+            configMapKeyRef:
+              key: temporal.address
+              name: cryptellation-credentials
+        resources: {}
+status: {}

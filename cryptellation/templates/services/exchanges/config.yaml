@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: cryptellation-exchanges
+data:
+    health.address: {{ (((.Values.services).exchanges).health).address | default ":9000" }}
+    {{ $SQL_DATABASE := (((.Values.credentials).datastores).sql).database | default "cryptellation_exchanges" }}
+    {{ $DEFAULT_SQL_HOST := (print .Release.Name "-cockroachdb-public." .Release.Namespace ".svc.cluster.local") }}
+    {{ $SQL_HOST := (((.Values.credentials).datastores).sql).host | default $DEFAULT_SQL_HOST }}
+    {{ $SQL_PORT := (((.Values.credentials).datastores).sql).port | default 26257 }}
+    {{ $SQL_USER := (((.Values.credentials).datastores).sql).user | default "cryptellation" }}
+    {{ $SQL_PASSWORD := (((.Values.credentials).datastores).sql).password | default "cryptellation" }}
+    sql.dsn: "host={{ $SQL_HOST }} port={{ $SQL_PORT }} user={{ $SQL_USER }} password={{ $SQL_PASSWORD }} dbname={{ $SQL_DATABASE }} sslmode=disable"

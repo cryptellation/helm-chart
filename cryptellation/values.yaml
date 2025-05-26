@@ -1,0 +1,185 @@
+# Temporal represents the Temporal dependency for the Cryptellation system.
+temporal:
+  # Enabled is a flag to enable or disable the Temporal dependency.
+  enabled: true
+  # Admintools manage the Temporal admin tools.
+  admintools:
+    # Enabled is a flag to enable or disable the Temporal admin tools.
+    enabled: false
+  # Server is the configuration for the Temporal server.
+  server:
+    config:
+      persistence:
+        default:
+          driver: "sql"
+          sql:
+            driver: "postgres12"
+            host: "cryptellation-cockroachdb-public"
+            port: 26257
+            user: "temporal"
+            password: "nopasswordneeded"
+            database: "temporal"
+        visibility:
+          driver: "sql"
+          sql:
+            driver: "postgres12"
+            host: "cryptellation-cockroachdb-public"
+            port: 26257
+            user: "temporal"
+            password: "nopasswordneeded"
+            database: "temporal"
+      namespaces:
+        create: true
+    replicaCount: 1
+  # Cassandra is the configuration for the Cassandra database.
+  cassandra:
+    # Enabled is a flag to enable or disable the Cassandra database.
+    enabled: false
+  # Elasticsearch is the configuration for Elasticsearch.
+  elasticsearch:
+    # Enabled is a flag to enable or disable Elasticsearch.
+    enabled: false
+  # Prometheus is the configuration for Prometheus.
+  prometheus:
+    # Enabled is a flag to enable or disable Prometheus.
+    enabled: false
+  # Grafana is the configuration for Grafana.
+  grafana:
+    # Enabled is a flag to enable or disable Grafana.
+    enabled: false
+# CockroachDB represents the CockroachDB dependency for the Cryptellation system.
+cockroachdb:
+  # Enabled is a flag to enable or disable the CockroachDB dependency.
+  enabled: true
+  # TLS is the configuration for TLS settings.
+  tls:
+    # Enabled is a flag to enable or disable TLS.
+    enabled: false
+
+# Credentials represents the credentials for the Cryptellation system.
+credentials:
+  # Exchanges contains the API keys for various exchanges.
+  exchanges:
+    binance:
+      api_key: changeme
+      secret_key: changeme
+  # OpenTelemetry contains the credentials for OpenTelemetry.
+  opentelemetry:
+    grpc:
+      endpoint:
+  # Temporal contains the credentials for Temporal.
+  temporal:
+    address: # Set by default to the Temporal service name
+      # Default is set to the Temporal service name in the same namespace.
+      # Example: "cryptellation-temporal-frontend.cryptellation.svc.cluster.local:7233"
+
+services: 
+  backtests:
+    # Image contains the image configuration.
+    image:
+      repository: ghcr.io/cryptellation/backtests
+      tag: latest
+      pullPolicy: Always
+    # Health contains the health check configuration.
+    health:
+      address: ":9000"
+    # Datastores contains the database connection strings.
+    datastores:
+      sql:
+        host: # Set by default to the CockroachDB service name
+          # Default is set to the CockroachDB service name in the same namespace.
+          # Example: "cryptellation-cockroachdb-public.cryptellation.svc.cluster.local"
+        port: # Set by default to the CockroachDB port
+          # Default is set to 26257, the default CockroachDB port.
+        user: cryptellation
+        password: cryptellation
+        database: cryptellation_backtests
+  candlesticks:
+    # Image contains the image configuration.
+    image:
+      repository: ghcr.io/cryptellation/candlesticks
+      tag: latest
+      pullPolicy: Always
+    # Health contains the health check configuration.
+    health:
+      address: ":9000"
+    # Datastores contains the database connection strings.
+    datastores:
+      sql:
+        host: # Set by default to the CockroachDB service name
+          # Default is set to the CockroachDB service name in the same namespace.
+          # Example: "cryptellation-cockroachdb-public.cryptellation.svc.cluster.local"
+        port: # Set by default to the CockroachDB port
+          # Default is set to 26257, the default CockroachDB port.
+        user: cryptellation
+        password: cryptellation
+        database: cryptellation_candlesticks
+  exchanges:
+    # Image contains the image configuration.
+    image:
+      repository: ghcr.io/cryptellation/exchanges
+      tag: latest
+      pullPolicy: Always
+    # Health contains the health check configuration.
+    health:
+      address: ":9000"
+    # Datastores contains the database connection strings.
+    datastores:
+      sql:
+        host: # Set by default to the CockroachDB service name
+          # Default is set to the CockroachDB service name in the same namespace.
+          # Example: "cryptellation-cockroachdb-public.cryptellation.svc.cluster.local"
+        port: # Set by default to the CockroachDB port
+          # Default is set to 26257, the default CockroachDB port.
+        user: cryptellation
+        password: cryptellation
+        database: cryptellation_exchanges
+  forwardtests:
+    # Image contains the image configuration.
+    image:
+      repository: ghcr.io/cryptellation/forwardtests
+      tag: latest
+      pullPolicy: Always
+    # Health contains the health check configuration.
+    health:
+      address: ":9000"
+    # Datastores contains the database connection strings.
+    datastores:
+      sql:
+        host: # Set by default to the CockroachDB service name
+          # Default is set to the CockroachDB service name in the same namespace.
+          # Example: "cryptellation-cockroachdb-public.cryptellation.svc.cluster.local"
+        port: # Set by default to the CockroachDB port
+          # Default is set to 26257, the default CockroachDB port.
+        user: cryptellation
+        password: cryptellation
+        database: cryptellation_forwardtests
+  sma:
+    # Image contains the image configuration.
+    image:
+      repository: ghcr.io/cryptellation/sma
+      tag: latest
+      pullPolicy: Always
+    # Health contains the health check configuration.
+    health:
+      address: ":9000"
+    # Datastores contains the database connection strings.
+    datastores:
+      sql:
+        host: # Set by default to the CockroachDB service name
+          # Default is set to the CockroachDB service name in the same namespace.
+          # Example: "cryptellation-cockroachdb-public.cryptellation.svc.cluster.local"
+        port: # Set by default to the CockroachDB port
+          # Default is set to 26257, the default CockroachDB port.
+        user: cryptellation
+        password: cryptellation
+        database: cryptellation_sma
+  ticks:
+    # Image contains the image configuration.
+    image:
+      repository: ghcr.io/cryptellation/ticks
+      tag: latest
+      pullPolicy: Always
+    # Health contains the health check configuration.
+    health:
+      address: ":9000"

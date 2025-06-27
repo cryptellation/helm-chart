@@ -1,9 +1,11 @@
+{{- if .Values.services.ticks.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
     app.kubernetes.io/name: {{ .Release.Name }}-ticks
   name: {{ .Release.Name }}-ticks
+  namespace: {{ .Release.Namespace }}
 spec:
   replicas: 1
   selector:
@@ -16,6 +18,13 @@ spec:
       labels:
         app: {{ .Release.Name }}-ticks
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: ticks
         image: {{ ((.Values.services).ticks).image.repository | default "ghcr.io/cryptellation/ticks" }}:{{ ((.Values.services).ticks).image.tag | default (printf "v%s" .Chart.AppVersion) }}
@@ -29,34 +38,45 @@ spec:
             path: /readiness
             port: {{ (((.Values.services).ticks).health).port | default 9000 }}
         env:
-        # Binance
-        - name: "BINANCE_API_KEY"
-          valueFrom:
-            configMapKeyRef:
-              key: binance.api_key
-              name: cryptellation-credentials
-        - name: "BINANCE_SECRET_KEY"
-          valueFrom:
-            configMapKeyRef:
-              key: binance.secret_key
-              name: cryptellation-credentials
         # Health
         - name: "HEALTH_ADDRESS"
           valueFrom:
             configMapKeyRef:
-              key:  health.address
-              name: cryptellation-ticks
+              key: health.address
+              name: {{ .Release.Name }}-ticks
         # Opentelemetry
         - name: "OPENTELEMETRY_GRPC_ENDPOINT"
           valueFrom:
             configMapKeyRef:
               key: opentelemetry.grpc.endpoint
-              name: cryptellation-credentials
+              name: {{ .Release.Name }}
         # Temporal
         - name: "TEMPORAL_ADDRESS"
           valueFrom:
             configMapKeyRef:
               key: temporal.address
-              name: cryptellation-credentials
+              name: {{ .Release.Name }}
+        # Binance
+        - name: "BINANCE_API_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: binance.api_key
+              name: {{ .Release.Name }}
+        - name: "BINANCE_SECRET_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: binance.secret_key
+              name: {{ .Release.Name }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          seccompProfile:
+            type: RuntimeDefault
         resources: {}
 status: {}
+{{- end }}

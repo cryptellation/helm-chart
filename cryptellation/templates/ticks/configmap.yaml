@@ -1,0 +1,11 @@
+{{- if .Values.services.ticks.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ .Release.Name }}-ticks
+  name: {{ .Release.Name }}-ticks
+  namespace: {{ .Release.Namespace }}
+data:
+  health.address: {{ (((.Values.services).ticks).health).address | default ":9000" }}
+{{- end }}

@@ -1,0 +1,11 @@
+{{- if .Values.services.forwardtests.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ .Release.Name }}-forwardtests
+  name: {{ .Release.Name }}-forwardtests
+  namespace: {{ .Release.Namespace }}
+data:
+  health.address: {{ (((.Values.services).forwardtests).health).address | default ":9000" }}
+{{- end }}

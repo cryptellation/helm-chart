@@ -1,0 +1,160 @@
+{{- if .Values.services.candlesticks.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ .Release.Name }}-candlesticks
+  name: {{ .Release.Name }}-candlesticks
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-candlesticks
+  template:
+    metadata:
+      annotations:
+        {{if (.Values.debug).forceDeployment }}timestamp: {{ now | quote }}{{end}}
+      labels:
+        app: {{ .Release.Name }}-candlesticks
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+      - name: sql-database-init
+        image: postgres:17.4-alpine
+        command: ["/bin/sh"]
+        args:
+        - -c
+        - |
+          # Create database if it doesn't exist
+          PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres -c "SELECT 'CREATE DATABASE $DB_NAME' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$DB_NAME');"
+          
+          # Grant privileges on database
+          PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
+          
+          # Grant schema permissions (connect to the specific database)
+          PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "GRANT ALL ON SCHEMA public TO $DB_USER;"
+        env:
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              key: sql.host
+              name: {{ .Release.Name }}-candlesticks
+        - name: DB_PORT
+          valueFrom:
+            secretKeyRef:
+              key: sql.port
+              name: {{ .Release.Name }}-candlesticks
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              key: sql.user
+              name: {{ .Release.Name }}-candlesticks
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: sql.password
+              name: {{ .Release.Name }}-candlesticks
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              key: sql.database
+              name: {{ .Release.Name }}-candlesticks
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          seccompProfile:
+            type: RuntimeDefault
+      - name: sql-migrations-exec
+        image: {{ ((.Values.services).candlesticks).image.repository | default "ghcr.io/cryptellation/candlesticks" }}:{{ ((.Values.services).candlesticks).image.tag | default (printf "v%s" .Chart.AppVersion) }}
+        imagePullPolicy: {{ ((.Values.services).candlesticks).image.pullPolicy | default "Always" }}
+        command: ["worker", "database", "migrate"]
+        env:
+        # SQL
+        - name: "SQL_DSN"
+          valueFrom:
+            secretKeyRef:
+              key: sql.dsn
+              name: {{ .Release.Name }}-candlesticks
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          seccompProfile:
+            type: RuntimeDefault
+      containers:
+      - name: candlesticks
+        image: {{ ((.Values.services).candlesticks).image.repository | default "ghcr.io/cryptellation/candlesticks" }}:{{ ((.Values.services).candlesticks).image.tag | default (printf "v%s" .Chart.AppVersion) }}
+        imagePullPolicy: {{ ((.Values.services).candlesticks).image.pullPolicy | default "Always" }}
+        livenessProbe:
+          httpGet:
+            path: /liveness
+            port: {{ (((.Values.services).candlesticks).health).port | default 9000 }}
+        readinessProbe:
+          httpGet:
+            path: /readiness
+            port: {{ (((.Values.services).candlesticks).health).port | default 9000 }}
+        env:
+        # Health
+        - name: "HEALTH_ADDRESS"
+          valueFrom:
+            configMapKeyRef:
+              key: health.address
+              name: {{ .Release.Name }}-candlesticks
+        # SQL
+        - name: "SQL_DSN"
+          valueFrom:
+            secretKeyRef:
+              key: sql.dsn
+              name: {{ .Release.Name }}-candlesticks
+        # Opentelemetry
+        - name: "OPENTELEMETRY_GRPC_ENDPOINT"
+          valueFrom:
+            configMapKeyRef:
+              key: opentelemetry.grpc.endpoint
+              name: {{ .Release.Name }}
+        # Temporal
+        - name: "TEMPORAL_ADDRESS"
+          valueFrom:
+            configMapKeyRef:
+              key: temporal.address
+              name: {{ .Release.Name }}
+        # Binance
+        - name: "BINANCE_API_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: binance.api_key
+              name: {{ .Release.Name }}
+        - name: "BINANCE_SECRET_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: binance.secret_key
+              name: {{ .Release.Name }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          seccompProfile:
+            type: RuntimeDefault
+        resources: {}
+status: {}
+{{- end }}

@@ -1,4 +1,1 @@
-local.yml
-custom.yml
-*.tgz
-tmp/
+values/

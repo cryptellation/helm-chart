@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-    name: cryptellation-ticks
-data:
-    health.address: {{ (((.Values.services).ticks).health).address | default ":9000" }}

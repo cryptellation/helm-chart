@@ -1,0 +1,11 @@
+{{- if .Values.services.exchanges.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ .Release.Name }}-exchanges
+  name: {{ .Release.Name }}-exchanges
+  namespace: {{ .Release.Namespace }}
+data:
+  health.address: {{ (((.Values.services).exchanges).health).address | default ":9000" }}
+{{- end }}

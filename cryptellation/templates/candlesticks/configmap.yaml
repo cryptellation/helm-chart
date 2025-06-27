@@ -1,0 +1,11 @@
+{{- if .Values.services.candlesticks.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ .Release.Name }}-candlesticks
+  name: {{ .Release.Name }}-candlesticks
+  namespace: {{ .Release.Namespace }}
+data:
+  health.address: {{ (((.Values.services).candlesticks).health).address | default ":9000" }}
+{{- end }}
